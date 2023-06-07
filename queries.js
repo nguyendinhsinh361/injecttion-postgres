@@ -2,7 +2,7 @@ const Pool = require("pg").Pool;
 const pool = new Pool({
   user: "root",
   host: "localhost",
-  database: "test",
+  database: "injejection-postgres",
   password: "123456",
   port: 5432,
 });
@@ -24,10 +24,24 @@ const getUserById = async (request, response) => {
   try {
     pool.query(`SELECT * FROM users WHERE id = ${id}`, (error, results) => {
       if (error) {
-        throw error;
+        response.status(404).json(error);
+      } else {
+        // if (results?.rows?.length) response.status(200).json(results.rows);
+        // else response.status(404).json(`Not found !`);
+        results = results.length
+          ? results.map((ele) => {
+              ele?.rows.map((r) => {
+                if (r?.password) delete r.password;
+                return r;
+              });
+              return ele.rows;
+            })
+          : results.rows.map((ele) => {
+              if (ele?.password) delete ele.password;
+              return ele;
+            });
+        response.status(200).json(results);
       }
-      console.log(1111, results);
-      response.status(200).json(results.rows);
     });
     // await pool.query(`COMMIT`);
   } catch (error) {
